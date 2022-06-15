@@ -1,0 +1,21 @@
+spring:
+  #  datasource:
+  #    url: jdbc:h2:tcp://localhost/~/jpashop
+  #    username: sa
+  #    password:
+  #    driver-class-name: org.h2.Driver
+
+  jpa:
+    #    open-in-view: false  대용량서비스시, false로 사용하고 Service를 통해 Transaction을 정의하여 사용하는것이 좋다.
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        #        show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 100
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+#    org.hibernate.type.descriptor.sql: trace
