@@ -1,19 +1,16 @@
 package com.example.querydsl.entity;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 
 @Entity
 @Setter @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(of = {"id","username","age"})
 public class Member {
 
+    @Id @GeneratedValue
     private Long id;
     private String username;
     private int age;
@@ -21,6 +18,14 @@ public class Member {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
     private Team team;
+
+    public Member(String username){
+        this(username,0);
+    }
+
+    public Member(String username, int age){
+        this(username,age,null);
+    }
 
     public Member(String username, int age, Team team) {
         this.username = username;
