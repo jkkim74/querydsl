@@ -1,16 +1,20 @@
 package com.example.querydsl;
 
 import com.example.querydsl.dto.MemberDto;
+import com.example.querydsl.dto.QMemberDto;
 import com.example.querydsl.dto.UserDto;
 import com.example.querydsl.entity.Member;
 import com.example.querydsl.entity.QMember;
 import com.example.querydsl.entity.QTeam;
 import com.example.querydsl.entity.Team;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -550,5 +554,157 @@ public class QuerydslBasicTest {
                 .from(member)
                 .fetch();
         result.stream().forEach(System.out::println);
+    }
+
+    @Test
+    public void findDtoQueryProjection(){
+        List<MemberDto> result = queryFactory
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
+
+    }
+
+    /**
+     * 동적쿼리 - BooleanBulder 사용
+     */
+    @Test
+    public void dynamicQuery_BooleanBuilder(){
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember1(usernameParam,ageParam);
+        assertThat(result.size()).isEqualTo(1);
+    }
+    
+    private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+        BooleanBuilder builder = new BooleanBuilder();
+        if(null != usernameParam){
+            builder.and(member.username.eq(usernameParam));
+        }
+        if(null != ageParam){
+            builder.and(member.age.eq(ageParam));
+        }
+        return queryFactory
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
+    }
+
+    @Test
+    public void dynamicQuery_WhereParam(){
+        String usernameParam = "member1";
+        Integer ageParam = null;
+
+        List<Member> result = searchMember2(usernameParam,ageParam);
+        assertThat(result.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+        return queryFactory
+                .selectFrom(member)
+                .where(usernameEq(usernameParam),ageEq(ageParam))
+                //.where(allEq(usernameParam,ageParam))//컴포지션 하게 처리 하는 방법
+                .fetch();
+
+    }
+
+    private BooleanExpression ageEq(Integer ageParam) {
+        return ageParam != null ? member.age.eq(ageParam) : null;
+    }
+
+    private BooleanExpression usernameEq(String usernameParam) {
+        return usernameParam != null ? member.username.eq(usernameParam) : null;
+    }
+
+    private BooleanExpression allEq(String usernameCond, Integer ageCond){
+        return usernameEq(usernameCond).and(ageEq(ageCond));
+
+    }
+    /**
+     * 수정,삭제 배치 쿼리
+     * 일괄업데이트 쿼리시, 디비에 값을 직접 업데이트함.. 따라서 업데이트 후에 영속성 컨텍스트의 값과
+     * DB의 값이 다를수 있음..
+     * 벌크 연산을 실행시, 영속석 컨텍스트를 날려줘야 한다..
+     */
+
+    @Test
+    public void bulkUpdate(){
+        //member1 = 10 -> 비회원
+        //member2 = 20 -> 비회원
+        //member3 = 30 -> 유지
+        //member4 = 40 -> 유지
+        long count = queryFactory
+                .update(member)
+                .set(member.username,"비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        em.flush();
+        em.clear();
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 더하기,곱하기 벌크 연산..
+     * add, multiply
+     */
+    @Test
+    public void bulkAdd(){
+        long count = queryFactory
+                .update(member)
+                .set(member.age,member.age.multiply(2))
+                .execute();
+    }
+
+    /**
+     * 삭제 벌크 연산
+     */
+    @Test
+    public void bulkDelete(){
+        queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+
+    }
+
+
+    /***
+     * SQL Function 호출하기..
+     * 사용자가 추가한 function을 쓰기 위해서는 H2Dialect 상속받은 클래스를 만들어서.. 설정에서 신규로 등록해서 써야 한다..
+     */
+
+    @Test
+    public void sqlFunction(){
+        List<String> result = queryFactory
+                .select(
+                        Expressions.stringTemplate("function('replace',{0},{1},{2})",
+                                member.username, "member", "M"))
+                .from(member)
+                .fetch();
+
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 대소문자로 변경 function 호출하기
+     */
+    @Test
+    public void sqlFunction2(){
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+  //              .where(member.username.eq(Expressions.stringTemplate("function('lower',{0})", member.username)))
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        result.stream().forEach(System.out::println);
+
     }
 }
