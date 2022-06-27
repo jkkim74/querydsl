@@ -1,5 +1,7 @@
 package com.example.querydsl;
 
+import com.example.querydsl.dto.MemberDto;
+import com.example.querydsl.dto.UserDto;
 import com.example.querydsl.entity.Member;
 import com.example.querydsl.entity.QMember;
 import com.example.querydsl.entity.QTeam;
@@ -7,6 +9,8 @@ import com.example.querydsl.entity.Team;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -466,5 +470,85 @@ public class QuerydslBasicTest {
             System.out.println("username = "+username);
             System.out.println("age = "+age);
         });
+    }
+
+    @Test
+    public void findDtoByJPQL(){
+        List<MemberDto> result = em.createQuery("select new com.example.querydsl.dto.MemberDto(m.username,m.age) from Member m", MemberDto.class)
+                .getResultList();
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * Setter를 사용한 Dto 사용
+     */
+    @Test
+    public void findDtoBySetter(){
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 필드를 사용한 Dto 사용
+     */
+    @Test
+    public void findDtoByField(){
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 생성자를 사용한 Dto 사용
+     */
+    @Test
+    public void findDtoByConstructor(){
+        List<MemberDto> result = queryFactory
+                .select(Projections.constructor(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 필드의 이름이 다른경우, as를 써서 이름을 맞춰준다..
+     * select 절에 sub쿼리가 들어가야 하는경우, ExpressionUtils.as를 사용하여 개발한다.
+     */
+    @Test
+    public void findUserDto(){
+        QMember memberSub = new QMember("memberSub");
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions
+                                .select(memberSub.age.max()).from(memberSub),"age")))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
+    }
+
+    /**
+     * 생성자에서 사용한 UserDto 사용
+     */
+    @Test
+    public void findUserDtoByConstructor(){
+        List<UserDto> result = queryFactory
+                .select(Projections.constructor(UserDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        result.stream().forEach(System.out::println);
     }
 }
