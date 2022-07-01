@@ -2,6 +2,7 @@ package com.example.querydsl.controller;
 
 import com.example.querydsl.dto.MemberSearchCon;
 import com.example.querydsl.dto.MemberTeamDto;
+import com.example.querydsl.repository.MemberJpaRepository;
 import com.example.querydsl.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,20 +17,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MemberController {
 
-    private final MemberRepository memberJpaRepository;
+    private final MemberJpaRepository memberJpaRepository;
+    private final MemberRepository memberRepository;
 
     @GetMapping("/v1/members")
     public List<MemberTeamDto> searchMemberV1(MemberSearchCon condition){
         return memberJpaRepository.search(condition);
     }
 
-    @GetMapping("/v1/members/{page}")
-    public Page<MemberTeamDto> searchMemberSimpleV1(MemberSearchCon condition, @PathVariable("page") int page){
-        return memberJpaRepository.searchPageSimple(condition, PageRequest.of(page,10));
+    @GetMapping("/v2/members")
+    public Page<MemberTeamDto> searchMemberSimpleV1(MemberSearchCon condition, Pageable pageable){
+        return memberRepository.searchPageSimple(condition, pageable);
     }
 
-    @GetMapping("/v2/members/{page}")
-    public Page<MemberTeamDto> searchMemberComplexV1(MemberSearchCon condition, @PathVariable("page") int page){
-        return memberJpaRepository.searchPageComplex(condition, PageRequest.of(page,10));
+    @GetMapping("/v3/members")
+    public Page<MemberTeamDto> searchMemberComplexV1(MemberSearchCon condition, Pageable pageable){
+        return memberRepository.searchPageComplex(condition, pageable);
     }
 }

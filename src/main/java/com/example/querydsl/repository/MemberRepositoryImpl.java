@@ -82,7 +82,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
         JPAQuery<Member> countQuery = getTotal(condition);
 
         //return new PageImpl<>(content,pageable,total);
-        return PageableExecutionUtils.getPage(content,pageable, () -> countQuery.fetch().size());
+        return PageableExecutionUtils.getPage(content,pageable, () -> countQuery.fetchCount());
     }
 
     /**
