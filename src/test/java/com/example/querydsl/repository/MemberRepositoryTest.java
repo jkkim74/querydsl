@@ -3,7 +3,9 @@ package com.example.querydsl.repository;
 import com.example.querydsl.dto.MemberSearchCon;
 import com.example.querydsl.dto.MemberTeamDto;
 import com.example.querydsl.entity.Member;
+import com.example.querydsl.entity.QMember;
 import com.example.querydsl.entity.Team;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +27,25 @@ public class MemberRepositoryTest {
     EntityManager em;
 
     @Autowired MemberRepository memberRepository;
+
+    @BeforeEach
+    public void init(){
+        Team team1 = new Team("team1");
+        Team team2 = new Team("team2");
+        em.persist(team1);
+        em.persist(team2);
+
+        Member member = new Member("member1",10,team1);
+        Member member1 = new Member("member2",20,team1);
+        Member member2 = new Member("member3",30,team2);
+        Member member3 = new Member("member4",40,team2);
+        Member member4 = new Member("member5",50,team2);
+        memberRepository.save(member);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+        memberRepository.save(member3);
+        memberRepository.save(member4);
+    }
 
     @Test
     public void basicTest(){
@@ -92,22 +113,6 @@ public class MemberRepositoryTest {
     @Commit
     public void searchTest(){
 
-        Team team1 = new Team("team1");
-        Team team2 = new Team("team2");
-        em.persist(team1);
-        em.persist(team2);
-
-        Member member = new Member("member1",10,team1);
-        Member member1 = new Member("member2",20,team1);
-        Member member2 = new Member("member3",30,team2);
-        Member member3 = new Member("member4",40,team2);
-        Member member4 = new Member("member5",50,team2);
-        memberRepository.save(member);
-        memberRepository.save(member1);
-        memberRepository.save(member2);
-        memberRepository.save(member3);
-        memberRepository.save(member4);
-
         MemberSearchCon condition = new MemberSearchCon();
         condition.setUsername("member1");
         condition.setTeamName("team1");
@@ -123,22 +128,6 @@ public class MemberRepositoryTest {
     @Commit
     public void searchPageSimpleTest(){
 
-        Team team1 = new Team("team1");
-        Team team2 = new Team("team2");
-        em.persist(team1);
-        em.persist(team2);
-
-        Member member = new Member("member1",10,team1);
-        Member member1 = new Member("member2",20,team1);
-        Member member2 = new Member("member3",30,team2);
-        Member member3 = new Member("member4",40,team2);
-        Member member4 = new Member("member5",50,team2);
-        memberRepository.save(member);
-        memberRepository.save(member1);
-        memberRepository.save(member2);
-        memberRepository.save(member3);
-        memberRepository.save(member4);
-
         MemberSearchCon condition = new MemberSearchCon();
         PageRequest paging = PageRequest.of(0, 3);
 
@@ -153,22 +142,6 @@ public class MemberRepositoryTest {
     @Commit
     public void searchPageComplexTest(){
 
-        Team team1 = new Team("team1");
-        Team team2 = new Team("team2");
-        em.persist(team1);
-        em.persist(team2);
-
-        Member member = new Member("member1",10,team1);
-        Member member1 = new Member("member2",20,team1);
-        Member member2 = new Member("member3",30,team2);
-        Member member3 = new Member("member4",40,team2);
-        Member member4 = new Member("member5",50,team2);
-        memberRepository.save(member);
-        memberRepository.save(member1);
-        memberRepository.save(member2);
-        memberRepository.save(member3);
-        memberRepository.save(member4);
-
         MemberSearchCon condition = new MemberSearchCon();
         PageRequest paging = PageRequest.of(0, 3);
 
@@ -177,5 +150,14 @@ public class MemberRepositoryTest {
         assertThat(result.getSize()).isEqualTo(3);
         assertThat(result.getContent()).extracting("username").containsExactly("member1","member2","member3");
 
+    }
+
+    @Test
+    public void querydslPredicateExcutorTest(){
+        QMember member = QMember.member;
+        Iterable<Member> result = memberRepository.findAll(member.age.between(10, 40).and(member.username.eq("member1")));
+        result.forEach(m -> {
+            System.out.println("member1 = "+m);
+        });
     }
 }
